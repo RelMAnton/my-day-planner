@@ -28,14 +28,15 @@
     .section-title { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
 
     .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
-    .block-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; gap: 12px; }
+    .block-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; gap: 12px; cursor: pointer; }
     .block-item:last-child { border-bottom: none; }
+    .block-item:hover { background: #f9f9f9; }
     .block-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
     .block-info { flex: 1; }
     .block-name { font-size: 16px; font-weight: 500; }
     .block-time { font-size: 13px; color: #8e8e93; margin-top: 2px; }
     .block-delete { background: none; border: none; color: #c7c7cc; font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1; }
-    .block-delete:hover { color: #ff3b30; }
+    .block-delete:active { color: #ff3b30; }
 
     .add-btn { width: 100%; background: white; border: none; border-radius: 12px; padding: 14px; font-size: 16px; color: #007aff; font-weight: 500; cursor: pointer; margin-top: 8px; }
     .add-btn:hover { background: #e5e5ea; }
@@ -60,10 +61,10 @@
     .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
     .btn-cancel { flex: 1; padding: 14px; border-radius: 12px; border: none; background: white; font-size: 16px; cursor: pointer; color: #1c1c1e; }
     .btn-save { flex: 1; padding: 14px; border-radius: 12px; border: none; background: #007aff; color: white; font-size: 16px; font-weight: 600; cursor: pointer; }
+    .btn-delete-activity { width: 100%; padding: 14px; border-radius: 12px; border: none; background: white; font-size: 16px; cursor: pointer; color: #ff3b30; margin-top: 10px; }
     .time-row { display: flex; gap: 10px; }
     .time-row input { flex: 1; }
 
-    /* Custom date picker */
     .date-display { width: 100%; background: white; border: none; border-radius: 10px; padding: 12px 14px; font-size: 16px; color: #1c1c1e; cursor: pointer; text-align: left; }
     .mini-cal { background: white; border-radius: 12px; padding: 12px; margin-top: 6px; display: none; }
     .mini-cal.open { display: block; }
@@ -81,7 +82,6 @@
     .mini-cell.empty:hover { background: none; }
     .mini-cell.past { color: #c7c7cc; }
 
-    /* Header calendar modal */
     .cal-modal { background: #f2f2f7; border-radius: 16px 16px 0 0; width: 100%; padding: 20px; padding-bottom: 40px; }
     .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .cal-nav button { background: none; border: none; font-size: 20px; cursor: pointer; color: #007aff; padding: 4px 10px; }
@@ -110,7 +110,7 @@
     <h1 id="pageTitle">My Day</h1>
     <div class="date" id="dateLabel"></div>
   </div>
-  <button class="cal-btn" id="calBtnHeader" onclick="openCalendar()" title="Calendar">📅</button>
+  <button class="cal-btn" id="calBtnHeader" onclick="openCalendar()">📅</button>
 </div>
 
 <div class="page active" id="pageMyDay">
@@ -121,7 +121,7 @@
     </div>
     <div class="section-title" id="planTitle">Today's plan</div>
     <div class="card" id="blockList"></div>
-    <button class="add-btn" id="addBtn" onclick="openModal()">+ Add Activity</button>
+    <button class="add-btn" id="addBtn" onclick="openModal(null, null)">+ Add Activity</button>
   </div>
 </div>
 
@@ -129,6 +129,7 @@
   <div class="content">
     <div class="section-title">Upcoming</div>
     <div id="upcomingList"></div>
+    <button class="add-btn" onclick="openModal(null, null)">+ Add Activity</button>
   </div>
 </div>
 
@@ -143,10 +144,10 @@
   </button>
 </nav>
 
-<!-- Add activity modal -->
+<!-- Add / Edit modal -->
 <div class="overlay" id="overlay">
   <div class="modal">
-    <h2>Add Activity</h2>
+    <h2 id="modalTitle">Add Activity</h2>
     <label>Activity name</label>
     <input type="text" id="actName" placeholder="e.g. Morning run" />
     <label>Quick pick</label>
@@ -170,12 +171,13 @@
     <div class="color-row" id="colorRow"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-save" onclick="saveBlock()">Add</button>
+      <button class="btn-save" onclick="saveBlock()">Save</button>
     </div>
+    <button class="btn-delete-activity" id="deleteActivityBtn" onclick="deleteFromModal()">Delete activity</button>
   </div>
 </div>
 
-<!-- Header calendar modal -->
+<!-- Header calendar -->
 <div class="overlay" id="calOverlay">
   <div class="cal-modal">
     <div class="cal-nav">
@@ -200,6 +202,10 @@
   let miniMonth, miniYear;
   let selectedDateKey = '';
   let currentTab = 'myDay';
+
+  // Edit state
+  let editingKey = null;
+  let editingIndex = null;
 
   function dateKey(d) {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -285,11 +291,11 @@
         'Viewing: ' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     }
     document.getElementById('planTitle').textContent = isToday ? "Today's plan" : "Activities";
-    document.getElementById('addBtn').style.display = isToday ? 'block' : 'none';
+    document.getElementById('addBtn').style.display = 'block';
     const list = document.getElementById('blockList');
     const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
     if (sorted.length === 0) {
-      list.innerHTML = '<div class="empty">' + (isToday ? 'No activities yet. Add your first one!' : 'No activities on this day.') + '</div>';
+      list.innerHTML = '<div class="empty">No activities yet. Add your first one!</div>';
       return;
     }
     list.innerHTML = '';
@@ -302,8 +308,9 @@
           <div class="block-name">${b.name}</div>
           <div class="block-time">${b.from} – ${b.to}</div>
         </div>
-        ${isToday ? `<button class="block-delete" onclick="deleteBlock('${key}', ${i})">×</button>` : ''}
+        <span style="font-size:13px;color:#c7c7cc;">›</span>
       `;
+      div.onclick = () => openModal(key, i);
       list.appendChild(div);
     });
   }
@@ -337,8 +344,9 @@
             <div class="block-name">${b.name}</div>
             <div class="block-time">${b.from} – ${b.to}</div>
           </div>
-          <button class="block-delete" onclick="deleteBlock('${key}', ${i})">×</button>
+          <span style="font-size:13px;color:#c7c7cc;">›</span>
         `;
+        div.onclick = () => openModal(key, i);
         card.appendChild(div);
       });
       group.appendChild(card);
@@ -351,12 +359,76 @@
     renderDay();
   }
 
-  function deleteBlock(key, i) {
-    let blocks = getBlocks(key);
+  // Open modal — null key/index = add new, otherwise edit existing
+  function openModal(key, index) {
+    editingKey = key;
+    editingIndex = index;
+    const isEdit = key !== null && index !== null;
+
+    document.getElementById('modalTitle').textContent = isEdit ? 'Edit Activity' : 'Add Activity';
+    document.getElementById('deleteActivityBtn').style.display = isEdit ? 'block' : 'none';
+
+    if (isEdit) {
+      const blocks = getBlocks(key);
+      const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
+      const b = sorted[index];
+      document.getElementById('actName').value = b.name;
+      selectedDateKey = key;
+      selectedColor = b.color;
+      document.getElementById('timeFrom').value = b.from;
+      document.getElementById('timeTo').value = b.to;
+    } else {
+      document.getElementById('actName').value = '';
+      selectedDateKey = todayKey();
+      selectedColor = COLORS[0];
+      document.getElementById('timeFrom').value = '09:00';
+      document.getElementById('timeTo').value = '09:30';
+    }
+
+    document.getElementById('dateDisplay').textContent = friendlyDate(selectedDateKey);
+    document.getElementById('miniCal').classList.remove('open');
+    buildColorPicker();
+    openMiniCal();
+    document.getElementById('overlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  function saveBlock() {
+    const name = document.getElementById('actName').value.trim();
+    const from = document.getElementById('timeFrom').value;
+    const to = document.getElementById('timeTo').value;
+    if (!name || !selectedDateKey || !from || !to) { alert('Please fill in all fields.'); return; }
+
+    // If editing, remove the old entry first (may be on a different date if date was changed)
+    if (editingKey !== null && editingIndex !== null) {
+      let oldBlocks = getBlocks(editingKey);
+      const sorted = [...oldBlocks].sort((a, b) => a.from.localeCompare(b.from));
+      const item = sorted[editingIndex];
+      oldBlocks = oldBlocks.filter(b => !(b.name === item.name && b.from === item.from && b.to === item.to));
+      setBlocks(editingKey, oldBlocks);
+    }
+
+    // Save to (possibly new) date
+    const blocks = getBlocks(selectedDateKey);
+    blocks.push({ name, from, to, color: selectedColor });
+    setBlocks(selectedDateKey, blocks);
+
+    closeModal();
+    if (currentTab === 'myDay') renderDay();
+    else renderUpcoming();
+  }
+
+  function deleteFromModal() {
+    if (editingKey === null || editingIndex === null) return;
+    let blocks = getBlocks(editingKey);
     const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
-    const item = sorted[i];
+    const item = sorted[editingIndex];
     blocks = blocks.filter(b => !(b.name === item.name && b.from === item.from && b.to === item.to));
-    setBlocks(key, blocks);
+    setBlocks(editingKey, blocks);
+    closeModal();
     if (currentTab === 'myDay') renderDay();
     else renderUpcoming();
   }
@@ -385,7 +457,6 @@
     });
   }
 
-  // Mini calendar inside modal
   function toggleMiniCal() {
     document.getElementById('miniCal').classList.toggle('open');
   }
@@ -456,37 +527,6 @@
       String(newH).padStart(2, '0') + ':' + String(newM).padStart(2, '0');
   }
 
-  function openModal() {
-    document.getElementById('actName').value = '';
-    selectedDateKey = todayKey();
-    document.getElementById('dateDisplay').textContent = friendlyDate(selectedDateKey);
-    document.getElementById('miniCal').classList.remove('open');
-    document.getElementById('timeFrom').value = '09:00';
-    document.getElementById('timeTo').value = '09:30';
-    selectedColor = COLORS[0];
-    buildColorPicker();
-    openMiniCal();
-    document.getElementById('overlay').classList.add('open');
-  }
-
-  function closeModal() {
-    document.getElementById('overlay').classList.remove('open');
-  }
-
-  function saveBlock() {
-    const name = document.getElementById('actName').value.trim();
-    const from = document.getElementById('timeFrom').value;
-    const to = document.getElementById('timeTo').value;
-    if (!name || !selectedDateKey || !from || !to) { alert('Please fill in all fields.'); return; }
-    const blocks = getBlocks(selectedDateKey);
-    blocks.push({ name, from, to, color: selectedColor });
-    setBlocks(selectedDateKey, blocks);
-    closeModal();
-    if (currentTab === 'myDay') renderDay();
-    else renderUpcoming();
-  }
-
-  // Header calendar
   function openCalendar() {
     const now = new Date();
     calMonth = now.getMonth();
