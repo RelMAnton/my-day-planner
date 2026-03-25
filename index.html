@@ -28,15 +28,26 @@
     .section-title { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
 
     .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
-    .block-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; gap: 12px; cursor: pointer; }
+    .block-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; gap: 12px; }
     .block-item:last-child { border-bottom: none; }
-    .block-item:hover { background: #f9f9f9; }
-    .block-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-    .block-info { flex: 1; }
+    .block-info { flex: 1; cursor: pointer; }
+    .block-info:hover { opacity: 0.8; }
     .block-name { font-size: 16px; font-weight: 500; }
     .block-time { font-size: 13px; color: #8e8e93; margin-top: 2px; }
-    .block-delete { background: none; border: none; color: #c7c7cc; font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1; }
-    .block-delete:active { color: #ff3b30; }
+
+    /* Checkbox */
+    .check-btn { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #c7c7cc; background: none; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .check-btn:active { transform: scale(0.9); }
+    .check-btn.checking { border-color: #34c759; background: #34c759; }
+    .check-btn.checking::after { content: ''; display: block; width: 6px; height: 10px; border: 2px solid white; border-top: none; border-left: none; transform: rotate(45deg) translateY(-1px); }
+
+    /* Fade out animation */
+    .block-item.fade-out { animation: fadeOut 0.35s ease forwards; }
+    @keyframes fadeOut {
+      0% { opacity: 1; max-height: 80px; }
+      40% { opacity: 0.3; }
+      100% { opacity: 0; max-height: 0; padding: 0; border: none; }
+    }
 
     .add-btn { width: 100%; background: white; border: none; border-radius: 12px; padding: 14px; font-size: 16px; color: #007aff; font-weight: 500; cursor: pointer; margin-top: 8px; }
     .add-btn:hover { background: #e5e5ea; }
@@ -202,8 +213,6 @@
   let miniMonth, miniYear;
   let selectedDateKey = '';
   let currentTab = 'myDay';
-
-  // Edit state
   let editingKey = null;
   let editingIndex = null;
 
@@ -278,6 +287,56 @@
     }
   }
 
+  function makeBlockItem(b, key, sortedIndex) {
+    const div = document.createElement('div');
+    div.className = 'block-item';
+    div.dataset.key = key;
+    div.dataset.index = sortedIndex;
+
+    const check = document.createElement('button');
+    check.className = 'check-btn';
+    check.onclick = (e) => {
+      e.stopPropagation();
+      tickOff(div, key, sortedIndex);
+    };
+
+    const dot = document.createElement('div');
+    dot.className = 'block-dot';
+    dot.style.background = b.color;
+
+    const info = document.createElement('div');
+    info.className = 'block-info';
+    info.innerHTML = `<div class="block-name">${b.name}</div><div class="block-time">${b.from} – ${b.to}</div>`;
+    info.onclick = () => openModal(key, sortedIndex);
+
+    const arrow = document.createElement('span');
+    arrow.style.cssText = 'font-size:13px;color:#c7c7cc;';
+    arrow.textContent = '›';
+    arrow.style.cursor = 'pointer';
+    arrow.onclick = () => openModal(key, sortedIndex);
+
+    div.appendChild(check);
+    div.appendChild(dot);
+    div.appendChild(info);
+    div.appendChild(arrow);
+    return div;
+  }
+
+  function tickOff(div, key, sortedIndex) {
+    const check = div.querySelector('.check-btn');
+    check.classList.add('checking');
+    div.classList.add('fade-out');
+    setTimeout(() => {
+      let blocks = getBlocks(key);
+      const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
+      const item = sorted[sortedIndex];
+      blocks = blocks.filter(b => !(b.name === item.name && b.from === item.from && b.to === item.to));
+      setBlocks(key, blocks);
+      if (currentTab === 'myDay') renderDay();
+      else renderUpcoming();
+    }, 350);
+  }
+
   function renderDay() {
     const key = currentKey();
     const blocks = getBlocks(key);
@@ -300,18 +359,7 @@
     }
     list.innerHTML = '';
     sorted.forEach((b, i) => {
-      const div = document.createElement('div');
-      div.className = 'block-item';
-      div.innerHTML = `
-        <div class="block-dot" style="background:${b.color}"></div>
-        <div class="block-info">
-          <div class="block-name">${b.name}</div>
-          <div class="block-time">${b.from} – ${b.to}</div>
-        </div>
-        <span style="font-size:13px;color:#c7c7cc;">›</span>
-      `;
-      div.onclick = () => openModal(key, i);
-      list.appendChild(div);
+      list.appendChild(makeBlockItem(b, key, i));
     });
   }
 
@@ -336,18 +384,7 @@
       const card = document.createElement('div');
       card.className = 'card';
       blocks.forEach((b, i) => {
-        const div = document.createElement('div');
-        div.className = 'block-item';
-        div.innerHTML = `
-          <div class="block-dot" style="background:${b.color}"></div>
-          <div class="block-info">
-            <div class="block-name">${b.name}</div>
-            <div class="block-time">${b.from} – ${b.to}</div>
-          </div>
-          <span style="font-size:13px;color:#c7c7cc;">›</span>
-        `;
-        div.onclick = () => openModal(key, i);
-        card.appendChild(div);
+        card.appendChild(makeBlockItem(b, key, i));
       });
       group.appendChild(card);
       container.appendChild(group);
@@ -359,15 +396,12 @@
     renderDay();
   }
 
-  // Open modal — null key/index = add new, otherwise edit existing
   function openModal(key, index) {
     editingKey = key;
     editingIndex = index;
     const isEdit = key !== null && index !== null;
-
     document.getElementById('modalTitle').textContent = isEdit ? 'Edit Activity' : 'Add Activity';
     document.getElementById('deleteActivityBtn').style.display = isEdit ? 'block' : 'none';
-
     if (isEdit) {
       const blocks = getBlocks(key);
       const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
@@ -384,7 +418,6 @@
       document.getElementById('timeFrom').value = '09:00';
       document.getElementById('timeTo').value = '09:30';
     }
-
     document.getElementById('dateDisplay').textContent = friendlyDate(selectedDateKey);
     document.getElementById('miniCal').classList.remove('open');
     buildColorPicker();
@@ -401,8 +434,6 @@
     const from = document.getElementById('timeFrom').value;
     const to = document.getElementById('timeTo').value;
     if (!name || !selectedDateKey || !from || !to) { alert('Please fill in all fields.'); return; }
-
-    // If editing, remove the old entry first (may be on a different date if date was changed)
     if (editingKey !== null && editingIndex !== null) {
       let oldBlocks = getBlocks(editingKey);
       const sorted = [...oldBlocks].sort((a, b) => a.from.localeCompare(b.from));
@@ -410,12 +441,9 @@
       oldBlocks = oldBlocks.filter(b => !(b.name === item.name && b.from === item.from && b.to === item.to));
       setBlocks(editingKey, oldBlocks);
     }
-
-    // Save to (possibly new) date
     const blocks = getBlocks(selectedDateKey);
     blocks.push({ name, from, to, color: selectedColor });
     setBlocks(selectedDateKey, blocks);
-
     closeModal();
     if (currentTab === 'myDay') renderDay();
     else renderUpcoming();
