@@ -11,28 +11,22 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, sans-serif; background: #f2f2f7; color: #1c1c1e; min-height: 100vh; padding-bottom: 80px; }
 
-    /* Header */
     .header { background: white; padding: 16px 20px 12px; border-bottom: 1px solid #e5e5ea; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; }
     .header-left h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
     .header-left .date { font-size: 14px; color: #8e8e93; margin-top: 2px; }
     .cal-btn { background: none; border: none; font-size: 24px; cursor: pointer; padding: 4px; }
 
-    /* Bottom nav */
     .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e5e5ea; display: flex; z-index: 20; padding-bottom: env(safe-area-inset-bottom); }
     .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 0 8px; background: none; border: none; cursor: pointer; gap: 3px; }
     .nav-btn .nav-icon { font-size: 22px; }
     .nav-btn .nav-label { font-size: 11px; color: #8e8e93; font-weight: 500; }
     .nav-btn.active .nav-label { color: #007aff; }
-    .nav-btn.active .nav-icon { filter: none; }
 
-    /* Pages */
     .page { display: none; }
     .page.active { display: block; }
     .content { padding: 16px; }
-
     .section-title { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
 
-    /* Cards & blocks */
     .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
     .block-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; gap: 12px; }
     .block-item:last-child { border-bottom: none; }
@@ -47,18 +41,16 @@
     .add-btn:hover { background: #e5e5ea; }
     .empty { text-align: center; padding: 32px 16px; color: #8e8e93; font-size: 15px; }
 
-    /* Upcoming date group */
     .date-group { margin-bottom: 20px; }
     .date-group-label { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
     .date-group-label.is-today { color: #007aff; }
 
-    /* Modal */
     .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: flex-end; }
     .overlay.open { display: flex; }
     .modal { background: #f2f2f7; border-radius: 16px 16px 0 0; width: 100%; padding: 20px; padding-bottom: 40px; max-height: 90vh; overflow-y: auto; }
     .modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; text-align: center; }
     .modal label { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin: 12px 0 6px; }
-    .modal input, .modal select { width: 100%; background: white; border: none; border-radius: 10px; padding: 12px 14px; font-size: 16px; color: #1c1c1e; outline: none; }
+    .modal input { width: 100%; background: white; border: none; border-radius: 10px; padding: 12px 14px; font-size: 16px; color: #1c1c1e; outline: none; }
     .color-row { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
     .color-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; }
     .color-dot.selected { border-color: #1c1c1e; }
@@ -71,7 +63,25 @@
     .time-row { display: flex; gap: 10px; }
     .time-row input { flex: 1; }
 
-    /* Calendar modal */
+    /* Custom date picker */
+    .date-display { width: 100%; background: white; border: none; border-radius: 10px; padding: 12px 14px; font-size: 16px; color: #1c1c1e; cursor: pointer; text-align: left; }
+    .mini-cal { background: white; border-radius: 12px; padding: 12px; margin-top: 6px; display: none; }
+    .mini-cal.open { display: block; }
+    .mini-cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .mini-cal-nav button { background: none; border: none; font-size: 18px; cursor: pointer; color: #007aff; padding: 2px 8px; }
+    .mini-cal-nav span { font-size: 15px; font-weight: 600; color: #1c1c1e; }
+    .mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .mini-day-name { text-align: center; font-size: 11px; font-weight: 600; color: #8e8e93; padding: 3px 0; }
+    .mini-cell { display: flex; align-items: center; justify-content: center; height: 36px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #1c1c1e; }
+    .mini-cell:hover { background: #f2f2f7; }
+    .mini-cell.today { color: #007aff; font-weight: 600; }
+    .mini-cell.selected { background: #007aff; color: white; font-weight: 600; }
+    .mini-cell.selected:hover { background: #007aff; }
+    .mini-cell.empty { cursor: default; }
+    .mini-cell.empty:hover { background: none; }
+    .mini-cell.past { color: #c7c7cc; }
+
+    /* Header calendar modal */
     .cal-modal { background: #f2f2f7; border-radius: 16px 16px 0 0; width: 100%; padding: 20px; padding-bottom: 40px; }
     .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .cal-nav button { background: none; border: none; font-size: 20px; cursor: pointer; color: #007aff; padding: 4px 10px; }
@@ -103,7 +113,6 @@
   <button class="cal-btn" id="calBtnHeader" onclick="openCalendar()" title="Calendar">📅</button>
 </div>
 
-<!-- My Day page -->
 <div class="page active" id="pageMyDay">
   <div class="content">
     <div id="viewingBanner" class="viewing-banner" style="display:none">
@@ -116,7 +125,6 @@
   </div>
 </div>
 
-<!-- Upcoming page -->
 <div class="page" id="pageUpcoming">
   <div class="content">
     <div class="section-title">Upcoming</div>
@@ -124,7 +132,6 @@
   </div>
 </div>
 
-<!-- Bottom nav -->
 <nav class="bottom-nav">
   <button class="nav-btn active" id="navMyDay" onclick="switchTab('myDay')">
     <span class="nav-icon">☀️</span>
@@ -145,10 +152,18 @@
     <label>Quick pick</label>
     <div class="presets" id="presets"></div>
     <label>Date</label>
-    <input type="date" id="actDate" />
+    <button class="date-display" id="dateDisplay" onclick="toggleMiniCal()"></button>
+    <div class="mini-cal" id="miniCal">
+      <div class="mini-cal-nav">
+        <button onclick="changeMiniMonth(-1)">‹</button>
+        <span id="miniMonthLabel"></span>
+        <button onclick="changeMiniMonth(1)">›</button>
+      </div>
+      <div class="mini-cal-grid" id="miniCalGrid"></div>
+    </div>
     <label>Time</label>
     <div class="time-row">
-      <input type="time" id="timeFrom" />
+      <input type="time" id="timeFrom" oninput="syncEndTime()" />
       <input type="time" id="timeTo" />
     </div>
     <label>Color</label>
@@ -160,7 +175,7 @@
   </div>
 </div>
 
-<!-- Calendar modal -->
+<!-- Header calendar modal -->
 <div class="overlay" id="calOverlay">
   <div class="cal-modal">
     <div class="cal-nav">
@@ -182,15 +197,16 @@
   let selectedColor = COLORS[0];
   let viewingDate = null;
   let calMonth, calYear;
+  let miniMonth, miniYear;
+  let selectedDateKey = '';
   let currentTab = 'myDay';
 
   function dateKey(d) {
-    return d.toISOString().slice(0, 10);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
   function todayKey() {
-    const now = new Date();
-    return dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+    return dateKey(new Date());
   }
 
   function getBlocks(key) {
@@ -216,10 +232,18 @@
     const [y, m, d] = key.split('-').map(Number);
     const date = new Date(y, m - 1, d);
     if (key === todayKey()) return 'Today';
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    if (key === dateKey(new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate()))) return 'Tomorrow';
+    const t = new Date(); t.setDate(t.getDate() + 1);
+    if (key === dateKey(t)) return 'Tomorrow';
     return date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
+  function friendlyDate(key) {
+    const [y, m, d] = key.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    if (key === todayKey()) return 'Today';
+    const t = new Date(); t.setDate(t.getDate() + 1);
+    if (key === dateKey(t)) return 'Tomorrow';
+    return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   }
 
   function init() {
@@ -238,7 +262,6 @@
     document.getElementById('navMyDay').classList.toggle('active', tab === 'myDay');
     document.getElementById('navUpcoming').classList.toggle('active', tab === 'upcoming');
     document.getElementById('calBtnHeader').style.display = tab === 'myDay' ? 'block' : 'none';
-
     if (tab === 'myDay') {
       document.getElementById('pageTitle').textContent = 'My Day';
       renderDay();
@@ -253,28 +276,22 @@
     const key = currentKey();
     const blocks = getBlocks(key);
     const isToday = isViewingToday();
-
     const d = viewingDate || new Date();
     document.getElementById('dateLabel').textContent =
       d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-
     document.getElementById('viewingBanner').style.display = isToday ? 'none' : 'flex';
     if (!isToday) {
       document.getElementById('viewingLabel').textContent =
         'Viewing: ' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     }
-
     document.getElementById('planTitle').textContent = isToday ? "Today's plan" : "Activities";
     document.getElementById('addBtn').style.display = isToday ? 'block' : 'none';
-
     const list = document.getElementById('blockList');
     const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
-
     if (sorted.length === 0) {
       list.innerHTML = '<div class="empty">' + (isToday ? 'No activities yet. Add your first one!' : 'No activities on this day.') + '</div>';
       return;
     }
-
     list.innerHTML = '';
     sorted.forEach((b, i) => {
       const div = document.createElement('div');
@@ -294,32 +311,23 @@
   function renderUpcoming() {
     const all = JSON.parse(localStorage.getItem('allDays') || '{}');
     const today = todayKey();
-
-    const futureKeys = Object.keys(all)
-      .filter(k => k >= today && all[k].length > 0)
-      .sort();
-
+    const futureKeys = Object.keys(all).filter(k => k >= today && all[k].length > 0).sort();
     const container = document.getElementById('upcomingList');
-
     if (futureKeys.length === 0) {
       container.innerHTML = '<div class="card"><div class="empty">No upcoming activities yet.</div></div>';
       return;
     }
-
     container.innerHTML = '';
     futureKeys.forEach(key => {
       const blocks = [...all[key]].sort((a, b) => a.from.localeCompare(b.from));
       const group = document.createElement('div');
       group.className = 'date-group';
-
       const label = document.createElement('div');
       label.className = 'date-group-label' + (key === today ? ' is-today' : '');
       label.textContent = formatDateLabel(key);
       group.appendChild(label);
-
       const card = document.createElement('div');
       card.className = 'card';
-
       blocks.forEach((b, i) => {
         const div = document.createElement('div');
         div.className = 'block-item';
@@ -329,11 +337,10 @@
             <div class="block-name">${b.name}</div>
             <div class="block-time">${b.from} – ${b.to}</div>
           </div>
-          <button class="block-delete" onclick="deleteBlock('${key}', ${i}); renderUpcoming();">×</button>
+          <button class="block-delete" onclick="deleteBlock('${key}', ${i})">×</button>
         `;
         card.appendChild(div);
       });
-
       group.appendChild(card);
       container.appendChild(group);
     });
@@ -378,13 +385,87 @@
     });
   }
 
+  // Mini calendar inside modal
+  function toggleMiniCal() {
+    document.getElementById('miniCal').classList.toggle('open');
+  }
+
+  function openMiniCal() {
+    const now = new Date();
+    miniMonth = now.getMonth();
+    miniYear = now.getFullYear();
+    renderMiniCal();
+  }
+
+  function changeMiniMonth(dir) {
+    miniMonth += dir;
+    if (miniMonth > 11) { miniMonth = 0; miniYear++; }
+    if (miniMonth < 0) { miniMonth = 11; miniYear--; }
+    renderMiniCal();
+  }
+
+  function renderMiniCal() {
+    document.getElementById('miniMonthLabel').textContent = MONTHS[miniMonth] + ' ' + miniYear;
+    const grid = document.getElementById('miniCalGrid');
+    grid.innerHTML = '';
+    DAYS.forEach(d => {
+      const cell = document.createElement('div');
+      cell.className = 'mini-day-name';
+      cell.textContent = d;
+      grid.appendChild(cell);
+    });
+    const firstDay = new Date(miniYear, miniMonth, 1).getDay();
+    const daysInMonth = new Date(miniYear, miniMonth + 1, 0).getDate();
+    const today = todayKey();
+    for (let i = 0; i < firstDay; i++) {
+      const blank = document.createElement('div');
+      blank.className = 'mini-cell empty';
+      grid.appendChild(blank);
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = `${miniYear}-${String(miniMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isToday = key === today;
+      const isSelected = key === selectedDateKey;
+      const isPast = key < today;
+      const cell = document.createElement('div');
+      cell.className = 'mini-cell' +
+        (isSelected ? ' selected' : '') +
+        (isToday && !isSelected ? ' today' : '') +
+        (isPast && !isSelected ? ' past' : '');
+      cell.textContent = d;
+      cell.onclick = () => selectDate(key);
+      grid.appendChild(cell);
+    }
+  }
+
+  function selectDate(key) {
+    selectedDateKey = key;
+    document.getElementById('dateDisplay').textContent = friendlyDate(key);
+    document.getElementById('miniCal').classList.remove('open');
+    renderMiniCal();
+  }
+
+  function syncEndTime() {
+    const from = document.getElementById('timeFrom').value;
+    if (!from) return;
+    const [h, m] = from.split(':').map(Number);
+    const total = h * 60 + m + 30;
+    const newH = Math.floor(total / 60) % 24;
+    const newM = total % 60;
+    document.getElementById('timeTo').value =
+      String(newH).padStart(2, '0') + ':' + String(newM).padStart(2, '0');
+  }
+
   function openModal() {
     document.getElementById('actName').value = '';
-    document.getElementById('actDate').value = todayKey();
-    document.getElementById('timeFrom').value = '';
-    document.getElementById('timeTo').value = '';
+    selectedDateKey = todayKey();
+    document.getElementById('dateDisplay').textContent = friendlyDate(selectedDateKey);
+    document.getElementById('miniCal').classList.remove('open');
+    document.getElementById('timeFrom').value = '09:00';
+    document.getElementById('timeTo').value = '09:30';
     selectedColor = COLORS[0];
     buildColorPicker();
+    openMiniCal();
     document.getElementById('overlay').classList.add('open');
   }
 
@@ -394,18 +475,18 @@
 
   function saveBlock() {
     const name = document.getElementById('actName').value.trim();
-    const date = document.getElementById('actDate').value;
     const from = document.getElementById('timeFrom').value;
     const to = document.getElementById('timeTo').value;
-    if (!name || !date || !from || !to) { alert('Please fill in all fields.'); return; }
-    const blocks = getBlocks(date);
+    if (!name || !selectedDateKey || !from || !to) { alert('Please fill in all fields.'); return; }
+    const blocks = getBlocks(selectedDateKey);
     blocks.push({ name, from, to, color: selectedColor });
-    setBlocks(date, blocks);
+    setBlocks(selectedDateKey, blocks);
     closeModal();
     if (currentTab === 'myDay') renderDay();
     else renderUpcoming();
   }
 
+  // Header calendar
   function openCalendar() {
     const now = new Date();
     calMonth = now.getMonth();
@@ -429,31 +510,25 @@
     document.getElementById('calMonthLabel').textContent = MONTHS[calMonth] + ' ' + calYear;
     const grid = document.getElementById('calGrid');
     grid.innerHTML = '';
-
     DAYS.forEach(d => {
       const cell = document.createElement('div');
       cell.className = 'cal-day-name';
       cell.textContent = d;
       grid.appendChild(cell);
     });
-
     const firstDay = new Date(calYear, calMonth, 1).getDay();
     const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     const todayStr = todayKey();
     const all = JSON.parse(localStorage.getItem('allDays') || '{}');
-
     for (let i = 0; i < firstDay; i++) {
       const blank = document.createElement('div');
       blank.className = 'cal-cell empty';
       grid.appendChild(blank);
     }
-
     for (let d = 1; d <= daysInMonth; d++) {
-      const dateObj = new Date(calYear, calMonth, d);
-      const key = dateKey(new Date(calYear, calMonth, d));
+      const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const isToday = key === todayStr;
       const hasData = all[key] && all[key].length > 0;
-
       const cell = document.createElement('div');
       cell.className = 'cal-cell' + (isToday ? ' today' : '');
       cell.innerHTML = `<span class="cal-num">${d}</span>${hasData ? '<div class="cal-dot"></div>' : ''}`;
