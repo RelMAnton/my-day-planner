@@ -9,16 +9,30 @@
   <title>Day Planner</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, sans-serif; background: #f2f2f7; color: #1c1c1e; min-height: 100vh; }
+    body { font-family: -apple-system, sans-serif; background: #f2f2f7; color: #1c1c1e; min-height: 100vh; padding-bottom: 80px; }
 
+    /* Header */
     .header { background: white; padding: 16px 20px 12px; border-bottom: 1px solid #e5e5ea; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; }
     .header-left h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
     .header-left .date { font-size: 14px; color: #8e8e93; margin-top: 2px; }
     .cal-btn { background: none; border: none; font-size: 24px; cursor: pointer; padding: 4px; }
 
+    /* Bottom nav */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e5e5ea; display: flex; z-index: 20; padding-bottom: env(safe-area-inset-bottom); }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 0 8px; background: none; border: none; cursor: pointer; gap: 3px; }
+    .nav-btn .nav-icon { font-size: 22px; }
+    .nav-btn .nav-label { font-size: 11px; color: #8e8e93; font-weight: 500; }
+    .nav-btn.active .nav-label { color: #007aff; }
+    .nav-btn.active .nav-icon { filter: none; }
+
+    /* Pages */
+    .page { display: none; }
+    .page.active { display: block; }
     .content { padding: 16px; }
+
     .section-title { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
 
+    /* Cards & blocks */
     .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
     .block-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; gap: 12px; }
     .block-item:last-child { border-bottom: none; }
@@ -33,7 +47,12 @@
     .add-btn:hover { background: #e5e5ea; }
     .empty { text-align: center; padding: 32px 16px; color: #8e8e93; font-size: 15px; }
 
-    /* Modal shared */
+    /* Upcoming date group */
+    .date-group { margin-bottom: 20px; }
+    .date-group-label { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .date-group-label.is-today { color: #007aff; }
+
+    /* Modal */
     .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: flex-end; }
     .overlay.open { display: flex; }
     .modal { background: #f2f2f7; border-radius: 16px 16px 0 0; width: 100%; padding: 20px; padding-bottom: 40px; max-height: 90vh; overflow-y: auto; }
@@ -63,7 +82,6 @@
     .cal-cell:hover { background: #e5e5ea; }
     .cal-cell.today { background: #007aff; }
     .cal-cell.today .cal-num { color: white; }
-    .cal-cell.selected { background: #e5e5ea; }
     .cal-cell.empty { cursor: default; }
     .cal-cell.empty:hover { background: none; }
     .cal-num { font-size: 16px; font-weight: 500; color: #1c1c1e; }
@@ -79,21 +97,44 @@
 
 <div class="header">
   <div class="header-left">
-    <h1>My Day</h1>
+    <h1 id="pageTitle">My Day</h1>
     <div class="date" id="dateLabel"></div>
   </div>
-  <button class="cal-btn" onclick="openCalendar()" title="Calendar">📅</button>
+  <button class="cal-btn" id="calBtnHeader" onclick="openCalendar()" title="Calendar">📅</button>
 </div>
 
-<div class="content">
-  <div id="viewingBanner" class="viewing-banner" style="display:none">
-    <span id="viewingLabel"></span>
-    <button onclick="goToToday()">Go to today</button>
+<!-- My Day page -->
+<div class="page active" id="pageMyDay">
+  <div class="content">
+    <div id="viewingBanner" class="viewing-banner" style="display:none">
+      <span id="viewingLabel"></span>
+      <button onclick="goToToday()">Go to today</button>
+    </div>
+    <div class="section-title" id="planTitle">Today's plan</div>
+    <div class="card" id="blockList"></div>
+    <button class="add-btn" id="addBtn" onclick="openModal()">+ Add Activity</button>
   </div>
-  <div class="section-title" id="planTitle">Today's plan</div>
-  <div class="card" id="blockList"></div>
-  <button class="add-btn" id="addBtn" onclick="openModal()">+ Add Activity</button>
 </div>
+
+<!-- Upcoming page -->
+<div class="page" id="pageUpcoming">
+  <div class="content">
+    <div class="section-title">Upcoming</div>
+    <div id="upcomingList"></div>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="navMyDay" onclick="switchTab('myDay')">
+    <span class="nav-icon">☀️</span>
+    <span class="nav-label">My Day</span>
+  </button>
+  <button class="nav-btn" id="navUpcoming" onclick="switchTab('upcoming')">
+    <span class="nav-icon">📋</span>
+    <span class="nav-label">Upcoming</span>
+  </button>
+</nav>
 
 <!-- Add activity modal -->
 <div class="overlay" id="overlay">
@@ -103,6 +144,8 @@
     <input type="text" id="actName" placeholder="e.g. Morning run" />
     <label>Quick pick</label>
     <div class="presets" id="presets"></div>
+    <label>Date</label>
+    <input type="date" id="actDate" />
     <label>Time</label>
     <div class="time-row">
       <input type="time" id="timeFrom" />
@@ -137,15 +180,17 @@
   const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
   let selectedColor = COLORS[0];
-  let viewingDate = null; // null = today
+  let viewingDate = null;
   let calMonth, calYear;
+  let currentTab = 'myDay';
 
   function dateKey(d) {
     return d.toISOString().slice(0, 10);
   }
 
   function todayKey() {
-    return dateKey(new Date());
+    const now = new Date();
+    return dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
   }
 
   function getBlocks(key) {
@@ -167,6 +212,16 @@
     return !viewingDate || dateKey(viewingDate) === todayKey();
   }
 
+  function formatDateLabel(key) {
+    const [y, m, d] = key.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    if (key === todayKey()) return 'Today';
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (key === dateKey(new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate()))) return 'Tomorrow';
+    return date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
   function init() {
     const now = new Date();
     calMonth = now.getMonth();
@@ -176,6 +231,24 @@
     renderDay();
   }
 
+  function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('pageMyDay').classList.toggle('active', tab === 'myDay');
+    document.getElementById('pageUpcoming').classList.toggle('active', tab === 'upcoming');
+    document.getElementById('navMyDay').classList.toggle('active', tab === 'myDay');
+    document.getElementById('navUpcoming').classList.toggle('active', tab === 'upcoming');
+    document.getElementById('calBtnHeader').style.display = tab === 'myDay' ? 'block' : 'none';
+
+    if (tab === 'myDay') {
+      document.getElementById('pageTitle').textContent = 'My Day';
+      renderDay();
+    } else {
+      document.getElementById('pageTitle').textContent = 'Upcoming';
+      document.getElementById('dateLabel').textContent = '';
+      renderUpcoming();
+    }
+  }
+
   function renderDay() {
     const key = currentKey();
     const blocks = getBlocks(key);
@@ -183,19 +256,19 @@
 
     const d = viewingDate || new Date();
     document.getElementById('dateLabel').textContent =
-      d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+      d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
     document.getElementById('viewingBanner').style.display = isToday ? 'none' : 'flex';
     if (!isToday) {
       document.getElementById('viewingLabel').textContent =
-        'Viewing: ' + d.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+        'Viewing: ' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
     document.getElementById('planTitle').textContent = isToday ? "Today's plan" : "Activities";
     document.getElementById('addBtn').style.display = isToday ? 'block' : 'none';
 
     const list = document.getElementById('blockList');
-    const sorted = [...blocks].sort((a,b) => a.from.localeCompare(b.from));
+    const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
 
     if (sorted.length === 0) {
       list.innerHTML = '<div class="empty">' + (isToday ? 'No activities yet. Add your first one!' : 'No activities on this day.') + '</div>';
@@ -212,9 +285,57 @@
           <div class="block-name">${b.name}</div>
           <div class="block-time">${b.from} – ${b.to}</div>
         </div>
-        ${isToday ? `<button class="block-delete" onclick="deleteBlock(${i})">×</button>` : ''}
+        ${isToday ? `<button class="block-delete" onclick="deleteBlock('${key}', ${i})">×</button>` : ''}
       `;
       list.appendChild(div);
+    });
+  }
+
+  function renderUpcoming() {
+    const all = JSON.parse(localStorage.getItem('allDays') || '{}');
+    const today = todayKey();
+
+    const futureKeys = Object.keys(all)
+      .filter(k => k >= today && all[k].length > 0)
+      .sort();
+
+    const container = document.getElementById('upcomingList');
+
+    if (futureKeys.length === 0) {
+      container.innerHTML = '<div class="card"><div class="empty">No upcoming activities yet.</div></div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    futureKeys.forEach(key => {
+      const blocks = [...all[key]].sort((a, b) => a.from.localeCompare(b.from));
+      const group = document.createElement('div');
+      group.className = 'date-group';
+
+      const label = document.createElement('div');
+      label.className = 'date-group-label' + (key === today ? ' is-today' : '');
+      label.textContent = formatDateLabel(key);
+      group.appendChild(label);
+
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      blocks.forEach((b, i) => {
+        const div = document.createElement('div');
+        div.className = 'block-item';
+        div.innerHTML = `
+          <div class="block-dot" style="background:${b.color}"></div>
+          <div class="block-info">
+            <div class="block-name">${b.name}</div>
+            <div class="block-time">${b.from} – ${b.to}</div>
+          </div>
+          <button class="block-delete" onclick="deleteBlock('${key}', ${i}); renderUpcoming();">×</button>
+        `;
+        card.appendChild(div);
+      });
+
+      group.appendChild(card);
+      container.appendChild(group);
     });
   }
 
@@ -223,14 +344,14 @@
     renderDay();
   }
 
-  function deleteBlock(i) {
-    const key = currentKey();
+  function deleteBlock(key, i) {
     let blocks = getBlocks(key);
-    const sorted = [...blocks].sort((a,b) => a.from.localeCompare(b.from));
+    const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
     const item = sorted[i];
     blocks = blocks.filter(b => !(b.name === item.name && b.from === item.from && b.to === item.to));
     setBlocks(key, blocks);
-    renderDay();
+    if (currentTab === 'myDay') renderDay();
+    else renderUpcoming();
   }
 
   function buildColorPicker() {
@@ -259,6 +380,7 @@
 
   function openModal() {
     document.getElementById('actName').value = '';
+    document.getElementById('actDate').value = todayKey();
     document.getElementById('timeFrom').value = '';
     document.getElementById('timeTo').value = '';
     selectedColor = COLORS[0];
@@ -272,18 +394,18 @@
 
   function saveBlock() {
     const name = document.getElementById('actName').value.trim();
+    const date = document.getElementById('actDate').value;
     const from = document.getElementById('timeFrom').value;
     const to = document.getElementById('timeTo').value;
-    if (!name || !from || !to) { alert('Please fill in name and both times.'); return; }
-    const key = todayKey();
-    const blocks = getBlocks(key);
+    if (!name || !date || !from || !to) { alert('Please fill in all fields.'); return; }
+    const blocks = getBlocks(date);
     blocks.push({ name, from, to, color: selectedColor });
-    setBlocks(key, blocks);
+    setBlocks(date, blocks);
     closeModal();
-    renderDay();
+    if (currentTab === 'myDay') renderDay();
+    else renderUpcoming();
   }
 
-  // Calendar
   function openCalendar() {
     const now = new Date();
     calMonth = now.getMonth();
@@ -328,7 +450,7 @@
 
     for (let d = 1; d <= daysInMonth; d++) {
       const dateObj = new Date(calYear, calMonth, d);
-      const key = dateKey(dateObj);
+      const key = dateKey(new Date(calYear, calMonth, d));
       const isToday = key === todayStr;
       const hasData = all[key] && all[key].length > 0;
 
@@ -336,8 +458,9 @@
       cell.className = 'cal-cell' + (isToday ? ' today' : '');
       cell.innerHTML = `<span class="cal-num">${d}</span>${hasData ? '<div class="cal-dot"></div>' : ''}`;
       cell.onclick = () => {
-        viewingDate = isToday ? null : dateObj;
+        viewingDate = isToday ? null : new Date(calYear, calMonth, d);
         closeCalendar();
+        switchTab('myDay');
         renderDay();
       };
       grid.appendChild(cell);
