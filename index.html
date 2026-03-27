@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -26,23 +26,22 @@
     .page.active { display: block; }
     .content { padding: 16px; }
     .section-title { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
-    .section-title.overdue { color: #ff3b30; }
+    .section-title.overdue { color: #8e8e93; }
 
     .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
     .block-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; gap: 12px; }
     .block-item:last-child { border-bottom: none; }
-    .block-item.is-overdue { background: #fff8f8; }
+    .block-item.is-overdue { background: white; }
     .block-info { flex: 1; cursor: pointer; }
     .block-info:hover { opacity: 0.8; }
     .block-name { font-size: 16px; font-weight: 500; }
     .block-time { font-size: 13px; color: #8e8e93; margin-top: 2px; }
-    .block-date-tag { font-size: 11px; color: #ff3b30; font-weight: 600; margin-top: 3px; }
+    .block-date-tag { font-size: 11px; color: #8e8e93; font-weight: 500; margin-top: 3px; }
 
     .check-btn { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #c7c7cc; background: none; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
     .check-btn:active { transform: scale(0.9); }
     .check-btn.checking { border-color: #34c759; background: #34c759; }
     .check-btn.checking::after { content: ''; display: block; width: 6px; height: 10px; border: 2px solid white; border-top: none; border-left: none; transform: rotate(45deg) translateY(-1px); }
-    .is-overdue .check-btn { border-color: #ff9999; }
 
     .block-item.fade-out { animation: fadeOut 0.35s ease forwards; }
     @keyframes fadeOut {
@@ -59,7 +58,6 @@
     .date-group-label { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
     .date-group-label.is-today { color: #007aff; }
 
-    /* Settings */
     .settings-row { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f2f2f7; gap: 14px; cursor: pointer; }
     .settings-row:last-child { border-bottom: none; }
     .settings-row:hover { background: #f9f9f9; }
@@ -71,7 +69,6 @@
     .settings-label p { font-size: 16px; font-weight: 500; }
     .settings-label span { font-size: 13px; color: #8e8e93; }
     .settings-arrow { font-size: 13px; color: #c7c7cc; }
-
     .settings-info { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
     .settings-info p { font-size: 14px; color: #8e8e93; line-height: 1.5; }
 
@@ -186,11 +183,9 @@
       </div>
     </div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />
-
     <div class="settings-info">
       <p>Export your tasks regularly and save the file to iCloud Drive or another safe place. If you ever lose your data, use Import to restore it.</p>
     </div>
-
     <div class="section-title">Danger zone</div>
     <div class="card">
       <div class="settings-row" onclick="clearAllData()">
@@ -220,7 +215,6 @@
   </button>
 </nav>
 
-<!-- Add / Edit modal -->
 <div class="overlay" id="overlay">
   <div class="modal">
     <h2 id="modalTitle">Add Activity</h2>
@@ -253,7 +247,6 @@
   </div>
 </div>
 
-<!-- Header calendar -->
 <div class="overlay" id="calOverlay">
   <div class="cal-modal">
     <div class="cal-nav">
@@ -356,7 +349,7 @@
     info.innerHTML = `
       <div class="block-name">${b.name}</div>
       <div class="block-time">${b.from} – ${b.to}</div>
-      ${showDateTag && isOverdue ? `<div class="block-date-tag">Overdue · ${friendlyDate(key)}</div>` : ''}
+      ${showDateTag && isOverdue ? `<div class="block-date-tag">${friendlyDate(key)}</div>` : ''}
       ${showDateTag && !isOverdue && key !== today ? `<div class="block-time">${friendlyDate(key)}</div>` : ''}
     `;
     info.onclick = () => openModal(key, sortedIndex);
@@ -419,7 +412,7 @@
     if (overdueKeys.length > 0) {
       const title = document.createElement('div');
       title.className = 'section-title overdue';
-      title.textContent = 'Overdue';
+      title.textContent = 'Backlog';
       container.appendChild(title);
       const card = document.createElement('div');
       card.className = 'card';
@@ -515,7 +508,6 @@
     if (currentTab === 'myDay') renderDay(); else renderAgenda();
   }
 
-  // Export
   function exportData() {
     const data = localStorage.getItem('allDays') || '{}';
     const blob = new Blob([data], { type: 'application/json' });
@@ -529,7 +521,6 @@
     showToast('Backup exported successfully');
   }
 
-  // Import
   function importData(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -551,7 +542,6 @@
     event.target.value = '';
   }
 
-  // Clear all
   function clearAllData() {
     if (confirm('This will permanently delete ALL your tasks. Are you sure?')) {
       if (confirm('Really? This cannot be undone.')) {
