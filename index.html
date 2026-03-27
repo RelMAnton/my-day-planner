@@ -58,7 +58,25 @@
     .date-group { margin-bottom: 20px; }
     .date-group-label { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
     .date-group-label.is-today { color: #007aff; }
-    .date-group-label.is-overdue { color: #ff3b30; }
+
+    /* Settings */
+    .settings-row { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f2f2f7; gap: 14px; cursor: pointer; }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row:hover { background: #f9f9f9; }
+    .settings-icon { font-size: 22px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0; }
+    .settings-icon.green { background: #34c759; }
+    .settings-icon.blue { background: #007aff; }
+    .settings-icon.red { background: #ff3b30; }
+    .settings-label { flex: 1; }
+    .settings-label p { font-size: 16px; font-weight: 500; }
+    .settings-label span { font-size: 13px; color: #8e8e93; }
+    .settings-arrow { font-size: 13px; color: #c7c7cc; }
+
+    .settings-info { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
+    .settings-info p { font-size: 14px; color: #8e8e93; line-height: 1.5; }
+
+    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #1c1c1e; color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+    .toast.show { opacity: 1; }
 
     .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: flex-end; }
     .overlay.open { display: flex; }
@@ -146,6 +164,47 @@
   </div>
 </div>
 
+<div class="page" id="pageSettings">
+  <div class="content">
+    <div class="section-title" style="margin-top:4px;">Backup</div>
+    <div class="card">
+      <div class="settings-row" onclick="exportData()">
+        <div class="settings-icon green">📤</div>
+        <div class="settings-label">
+          <p>Export backup</p>
+          <span>Save all tasks to a JSON file</span>
+        </div>
+        <div class="settings-arrow">›</div>
+      </div>
+      <div class="settings-row" onclick="document.getElementById('importFile').click()">
+        <div class="settings-icon blue">📥</div>
+        <div class="settings-label">
+          <p>Import backup</p>
+          <span>Restore tasks from a JSON file</span>
+        </div>
+        <div class="settings-arrow">›</div>
+      </div>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />
+
+    <div class="settings-info">
+      <p>Export your tasks regularly and save the file to iCloud Drive or another safe place. If you ever lose your data, use Import to restore it.</p>
+    </div>
+
+    <div class="section-title">Danger zone</div>
+    <div class="card">
+      <div class="settings-row" onclick="clearAllData()">
+        <div class="settings-icon red">🗑️</div>
+        <div class="settings-label">
+          <p style="color:#ff3b30;">Clear all data</p>
+          <span>Permanently delete all tasks</span>
+        </div>
+        <div class="settings-arrow">›</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <nav class="bottom-nav">
   <button class="nav-btn active" id="navMyDay" onclick="switchTab('myDay')">
     <span class="nav-icon">☀️</span>
@@ -154,6 +213,10 @@
   <button class="nav-btn" id="navAgenda" onclick="switchTab('agenda')">
     <span class="nav-icon">📋</span>
     <span class="nav-label">Agenda</span>
+  </button>
+  <button class="nav-btn" id="navSettings" onclick="switchTab('settings')">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label">Settings</span>
   </button>
 </nav>
 
@@ -203,6 +266,8 @@
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
   const COLORS = ['#007aff','#34c759','#ff9500','#ff3b30','#af52de','#5ac8fa','#ff2d55','#ffcc00'];
   const PRESETS = ['Sport','Dog walk','Workout','Dinner','Choir','Reading','Work','Shopping','Nap','Cooking'];
@@ -230,6 +295,13 @@
   function currentKey() { return viewingDate ? dateKey(viewingDate) : todayKey(); }
   function isViewingToday() { return !viewingDate || dateKey(viewingDate) === todayKey(); }
 
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
   function formatDateLabel(key) {
     const [y,m,d] = key.split('-').map(Number);
     const date = new Date(y, m-1, d);
@@ -255,19 +327,14 @@
 
   function switchTab(tab) {
     currentTab = tab;
-    document.getElementById('pageMyDay').classList.toggle('active', tab === 'myDay');
-    document.getElementById('pageAgenda').classList.toggle('active', tab === 'agenda');
-    document.getElementById('navMyDay').classList.toggle('active', tab === 'myDay');
-    document.getElementById('navAgenda').classList.toggle('active', tab === 'agenda');
+    ['myDay','agenda','settings'].forEach(t => {
+      document.getElementById('page' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === tab);
+      document.getElementById('nav' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === tab);
+    });
     document.getElementById('calBtnHeader').style.display = tab === 'myDay' ? 'block' : 'none';
-    if (tab === 'myDay') {
-      document.getElementById('pageTitle').textContent = 'My Day';
-      renderDay();
-    } else {
-      document.getElementById('pageTitle').textContent = 'Agenda';
-      document.getElementById('dateLabel').textContent = '';
-      renderAgenda();
-    }
+    if (tab === 'myDay') { document.getElementById('pageTitle').textContent = 'My Day'; renderDay(); }
+    else if (tab === 'agenda') { document.getElementById('pageTitle').textContent = 'Agenda'; document.getElementById('dateLabel').textContent = ''; renderAgenda(); }
+    else { document.getElementById('pageTitle').textContent = 'Settings'; document.getElementById('dateLabel').textContent = ''; }
   }
 
   function makeBlockItem(b, key, sortedIndex, showDateTag) {
@@ -299,16 +366,12 @@
     arrow.textContent = '›';
     arrow.onclick = () => openModal(key, sortedIndex);
 
-    div.appendChild(check);
-    div.appendChild(dot);
-    div.appendChild(info);
-    div.appendChild(arrow);
+    div.appendChild(check); div.appendChild(dot); div.appendChild(info); div.appendChild(arrow);
     return div;
   }
 
   function tickOff(div, key, sortedIndex) {
-    const check = div.querySelector('.check-btn');
-    check.classList.add('checking');
+    div.querySelector('.check-btn').classList.add('checking');
     div.classList.add('fade-out');
     setTimeout(() => {
       let blocks = getBlocks(key);
@@ -316,8 +379,7 @@
       const item = sorted[sortedIndex];
       blocks = blocks.filter(b => !(b.name===item.name && b.from===item.from && b.to===item.to));
       setBlocks(key, blocks);
-      if (currentTab === 'myDay') renderDay();
-      else renderAgenda();
+      if (currentTab === 'myDay') renderDay(); else renderAgenda();
     }, 350);
   }
 
@@ -334,13 +396,9 @@
         'Viewing: ' + d.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
     }
     document.getElementById('planTitle').textContent = isToday ? "Today's plan" : "Activities";
-    document.getElementById('addBtn').style.display = 'block';
     const list = document.getElementById('blockList');
     const sorted = [...blocks].sort((a,b) => a.from.localeCompare(b.from));
-    if (sorted.length === 0) {
-      list.innerHTML = '<div class="empty">No activities yet. Add your first one!</div>';
-      return;
-    }
+    if (sorted.length === 0) { list.innerHTML = '<div class="empty">No activities yet. Add your first one!</div>'; return; }
     list.innerHTML = '';
     sorted.forEach((b,i) => list.appendChild(makeBlockItem(b, key, i, false)));
   }
@@ -350,15 +408,14 @@
     const today = todayKey();
     const allKeys = Object.keys(all).filter(k => all[k].length > 0).sort();
     const overdueKeys = allKeys.filter(k => k < today);
-    const currentAndFutureKeys = allKeys.filter(k => k >= today);
+    const futureKeys = allKeys.filter(k => k >= today);
     const container = document.getElementById('agendaList');
     container.innerHTML = '';
 
-    if (overdueKeys.length === 0 && currentAndFutureKeys.length === 0) {
+    if (overdueKeys.length === 0 && futureKeys.length === 0) {
       container.innerHTML = '<div class="card"><div class="empty">No activities yet.</div></div>';
       return;
     }
-
     if (overdueKeys.length > 0) {
       const title = document.createElement('div');
       title.className = 'section-title overdue';
@@ -367,19 +424,17 @@
       const card = document.createElement('div');
       card.className = 'card';
       overdueKeys.forEach(key => {
-        const blocks = [...all[key]].sort((a,b) => a.from.localeCompare(b.from));
-        blocks.forEach((b,i) => card.appendChild(makeBlockItem(b, key, i, true)));
+        [...all[key]].sort((a,b) => a.from.localeCompare(b.from)).forEach((b,i) => card.appendChild(makeBlockItem(b, key, i, true)));
       });
       container.appendChild(card);
     }
-
-    if (currentAndFutureKeys.length > 0) {
+    if (futureKeys.length > 0) {
       const title = document.createElement('div');
       title.className = 'section-title';
       title.style.marginTop = overdueKeys.length > 0 ? '16px' : '0';
       title.textContent = 'Upcoming';
       container.appendChild(title);
-      currentAndFutureKeys.forEach(key => {
+      futureKeys.forEach(key => {
         const blocks = [...all[key]].sort((a,b) => a.from.localeCompare(b.from));
         const group = document.createElement('div');
         group.className = 'date-group';
@@ -412,8 +467,7 @@
       document.getElementById('timeTo').value = b.to;
     } else {
       document.getElementById('actName').value = '';
-      selectedDateKey = todayKey();
-      selectedColor = COLORS[0];
+      selectedDateKey = todayKey(); selectedColor = COLORS[0];
       const now = new Date();
       const roundedMin = Math.ceil(now.getMinutes() / 5) * 5;
       const fromMin = now.getHours() * 60 + (roundedMin === 60 ? 0 : roundedMin);
@@ -461,6 +515,53 @@
     if (currentTab === 'myDay') renderDay(); else renderAgenda();
   }
 
+  // Export
+  function exportData() {
+    const data = localStorage.getItem('allDays') || '{}';
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `day-planner-backup-${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Backup exported successfully');
+  }
+
+  // Import
+  function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (typeof data !== 'object') throw new Error();
+        if (confirm('This will replace all your current tasks. Are you sure?')) {
+          localStorage.setItem('allDays', JSON.stringify(data));
+          showToast('Backup imported successfully');
+          renderDay();
+        }
+      } catch {
+        alert('Invalid backup file. Please use a file exported from this app.');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  // Clear all
+  function clearAllData() {
+    if (confirm('This will permanently delete ALL your tasks. Are you sure?')) {
+      if (confirm('Really? This cannot be undone.')) {
+        localStorage.setItem('allDays', '{}');
+        showToast('All data cleared');
+        renderDay();
+      }
+    }
+  }
+
   function buildColorPicker() {
     const row = document.getElementById('colorRow');
     row.innerHTML = '';
@@ -472,7 +573,6 @@
       row.appendChild(d);
     });
   }
-
   function buildPresets() {
     const el = document.getElementById('presets');
     el.innerHTML = '';
@@ -484,7 +584,6 @@
       el.appendChild(b);
     });
   }
-
   function toggleMiniCal() { document.getElementById('miniCal').classList.toggle('open'); }
   function openMiniCal() {
     const now = new Date();
@@ -541,7 +640,6 @@
     document.getElementById('timeTo').value =
       String(Math.floor(total/60)%24).padStart(2,'0') + ':' + String(total%60).padStart(2,'0');
   }
-
   function openCalendar() {
     calMonth = new Date().getMonth(); calYear = new Date().getFullYear();
     renderCalendar();
