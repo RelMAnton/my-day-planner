@@ -26,22 +26,24 @@
     .page.active { display: block; }
     .content { padding: 16px; }
     .section-title { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
+    .section-title.overdue { color: #ff3b30; }
 
     .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
     .block-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; gap: 12px; }
     .block-item:last-child { border-bottom: none; }
+    .block-item.is-overdue { background: #fff8f8; }
     .block-info { flex: 1; cursor: pointer; }
     .block-info:hover { opacity: 0.8; }
     .block-name { font-size: 16px; font-weight: 500; }
     .block-time { font-size: 13px; color: #8e8e93; margin-top: 2px; }
+    .block-date-tag { font-size: 11px; color: #ff3b30; font-weight: 600; margin-top: 3px; }
 
-    /* Checkbox */
     .check-btn { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #c7c7cc; background: none; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
     .check-btn:active { transform: scale(0.9); }
     .check-btn.checking { border-color: #34c759; background: #34c759; }
     .check-btn.checking::after { content: ''; display: block; width: 6px; height: 10px; border: 2px solid white; border-top: none; border-left: none; transform: rotate(45deg) translateY(-1px); }
+    .is-overdue .check-btn { border-color: #ff9999; }
 
-    /* Fade out animation */
     .block-item.fade-out { animation: fadeOut 0.35s ease forwards; }
     @keyframes fadeOut {
       0% { opacity: 1; max-height: 80px; }
@@ -56,6 +58,7 @@
     .date-group { margin-bottom: 20px; }
     .date-group-label { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
     .date-group-label.is-today { color: #007aff; }
+    .date-group-label.is-overdue { color: #ff3b30; }
 
     .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: flex-end; }
     .overlay.open { display: flex; }
@@ -132,15 +135,14 @@
     </div>
     <div class="section-title" id="planTitle">Today's plan</div>
     <div class="card" id="blockList"></div>
-    <button class="add-btn" id="addBtn" onclick="openModal(null, null)">+ Add Activity</button>
+    <button class="add-btn" id="addBtn" onclick="openModal(null,null)">+ Add Activity</button>
   </div>
 </div>
 
-<div class="page" id="pageUpcoming">
+<div class="page" id="pageAgenda">
   <div class="content">
-    <div class="section-title">Upcoming</div>
-    <div id="upcomingList"></div>
-    <button class="add-btn" onclick="openModal(null, null)">+ Add Activity</button>
+    <div id="agendaList"></div>
+    <button class="add-btn" onclick="openModal(null,null)">+ Add Activity</button>
   </div>
 </div>
 
@@ -149,9 +151,9 @@
     <span class="nav-icon">☀️</span>
     <span class="nav-label">My Day</span>
   </button>
-  <button class="nav-btn" id="navUpcoming" onclick="switchTab('upcoming')">
+  <button class="nav-btn" id="navAgenda" onclick="switchTab('agenda')">
     <span class="nav-icon">📋</span>
-    <span class="nav-label">Upcoming</span>
+    <span class="nav-label">Agenda</span>
   </button>
 </nav>
 
@@ -209,8 +211,7 @@
 
   let selectedColor = COLORS[0];
   let viewingDate = null;
-  let calMonth, calYear;
-  let miniMonth, miniYear;
+  let calMonth, calYear, miniMonth, miniYear;
   let selectedDateKey = '';
   let currentTab = 'myDay';
   let editingKey = null;
@@ -219,86 +220,65 @@
   function dateKey(d) {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
-
-  function todayKey() {
-    return dateKey(new Date());
-  }
-
-  function getBlocks(key) {
-    const all = JSON.parse(localStorage.getItem('allDays') || '{}');
-    return all[key] || [];
-  }
-
+  function todayKey() { return dateKey(new Date()); }
+  function getBlocks(key) { return JSON.parse(localStorage.getItem('allDays') || '{}')[key] || []; }
   function setBlocks(key, blocks) {
     const all = JSON.parse(localStorage.getItem('allDays') || '{}');
     all[key] = blocks;
     localStorage.setItem('allDays', JSON.stringify(all));
   }
-
-  function currentKey() {
-    return viewingDate ? dateKey(viewingDate) : todayKey();
-  }
-
-  function isViewingToday() {
-    return !viewingDate || dateKey(viewingDate) === todayKey();
-  }
+  function currentKey() { return viewingDate ? dateKey(viewingDate) : todayKey(); }
+  function isViewingToday() { return !viewingDate || dateKey(viewingDate) === todayKey(); }
 
   function formatDateLabel(key) {
-    const [y, m, d] = key.split('-').map(Number);
-    const date = new Date(y, m - 1, d);
+    const [y,m,d] = key.split('-').map(Number);
+    const date = new Date(y, m-1, d);
     if (key === todayKey()) return 'Today';
-    const t = new Date(); t.setDate(t.getDate() + 1);
+    const t = new Date(); t.setDate(t.getDate()+1);
     if (key === dateKey(t)) return 'Tomorrow';
-    return date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    return date.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
   }
-
   function friendlyDate(key) {
-    const [y, m, d] = key.split('-').map(Number);
-    const date = new Date(y, m - 1, d);
+    const [y,m,d] = key.split('-').map(Number);
+    const date = new Date(y, m-1, d);
     if (key === todayKey()) return 'Today';
-    const t = new Date(); t.setDate(t.getDate() + 1);
+    const t = new Date(); t.setDate(t.getDate()+1);
     if (key === dateKey(t)) return 'Tomorrow';
-    return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    return date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
   }
 
   function init() {
     const now = new Date();
-    calMonth = now.getMonth();
-    calYear = now.getFullYear();
-    buildColorPicker();
-    buildPresets();
-    renderDay();
+    calMonth = now.getMonth(); calYear = now.getFullYear();
+    buildColorPicker(); buildPresets(); renderDay();
   }
 
   function switchTab(tab) {
     currentTab = tab;
     document.getElementById('pageMyDay').classList.toggle('active', tab === 'myDay');
-    document.getElementById('pageUpcoming').classList.toggle('active', tab === 'upcoming');
+    document.getElementById('pageAgenda').classList.toggle('active', tab === 'agenda');
     document.getElementById('navMyDay').classList.toggle('active', tab === 'myDay');
-    document.getElementById('navUpcoming').classList.toggle('active', tab === 'upcoming');
+    document.getElementById('navAgenda').classList.toggle('active', tab === 'agenda');
     document.getElementById('calBtnHeader').style.display = tab === 'myDay' ? 'block' : 'none';
     if (tab === 'myDay') {
       document.getElementById('pageTitle').textContent = 'My Day';
       renderDay();
     } else {
-      document.getElementById('pageTitle').textContent = 'Upcoming';
+      document.getElementById('pageTitle').textContent = 'Agenda';
       document.getElementById('dateLabel').textContent = '';
-      renderUpcoming();
+      renderAgenda();
     }
   }
 
-  function makeBlockItem(b, key, sortedIndex) {
+  function makeBlockItem(b, key, sortedIndex, showDateTag) {
+    const today = todayKey();
+    const isOverdue = key < today;
     const div = document.createElement('div');
-    div.className = 'block-item';
-    div.dataset.key = key;
-    div.dataset.index = sortedIndex;
+    div.className = 'block-item' + (isOverdue ? ' is-overdue' : '');
 
     const check = document.createElement('button');
     check.className = 'check-btn';
-    check.onclick = (e) => {
-      e.stopPropagation();
-      tickOff(div, key, sortedIndex);
-    };
+    check.onclick = (e) => { e.stopPropagation(); tickOff(div, key, sortedIndex); };
 
     const dot = document.createElement('div');
     dot.className = 'block-dot';
@@ -306,13 +286,17 @@
 
     const info = document.createElement('div');
     info.className = 'block-info';
-    info.innerHTML = `<div class="block-name">${b.name}</div><div class="block-time">${b.from} – ${b.to}</div>`;
+    info.innerHTML = `
+      <div class="block-name">${b.name}</div>
+      <div class="block-time">${b.from} – ${b.to}</div>
+      ${showDateTag && isOverdue ? `<div class="block-date-tag">Overdue · ${friendlyDate(key)}</div>` : ''}
+      ${showDateTag && !isOverdue && key !== today ? `<div class="block-time">${friendlyDate(key)}</div>` : ''}
+    `;
     info.onclick = () => openModal(key, sortedIndex);
 
     const arrow = document.createElement('span');
-    arrow.style.cssText = 'font-size:13px;color:#c7c7cc;';
+    arrow.style.cssText = 'font-size:13px;color:#c7c7cc;cursor:pointer;';
     arrow.textContent = '›';
-    arrow.style.cursor = 'pointer';
     arrow.onclick = () => openModal(key, sortedIndex);
 
     div.appendChild(check);
@@ -328,12 +312,12 @@
     div.classList.add('fade-out');
     setTimeout(() => {
       let blocks = getBlocks(key);
-      const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
+      const sorted = [...blocks].sort((a,b) => a.from.localeCompare(b.from));
       const item = sorted[sortedIndex];
-      blocks = blocks.filter(b => !(b.name === item.name && b.from === item.from && b.to === item.to));
+      blocks = blocks.filter(b => !(b.name===item.name && b.from===item.from && b.to===item.to));
       setBlocks(key, blocks);
       if (currentTab === 'myDay') renderDay();
-      else renderUpcoming();
+      else renderAgenda();
     }, 350);
   }
 
@@ -343,91 +327,109 @@
     const isToday = isViewingToday();
     const d = viewingDate || new Date();
     document.getElementById('dateLabel').textContent =
-      d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
     document.getElementById('viewingBanner').style.display = isToday ? 'none' : 'flex';
     if (!isToday) {
       document.getElementById('viewingLabel').textContent =
-        'Viewing: ' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        'Viewing: ' + d.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
     }
     document.getElementById('planTitle').textContent = isToday ? "Today's plan" : "Activities";
     document.getElementById('addBtn').style.display = 'block';
     const list = document.getElementById('blockList');
-    const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
+    const sorted = [...blocks].sort((a,b) => a.from.localeCompare(b.from));
     if (sorted.length === 0) {
       list.innerHTML = '<div class="empty">No activities yet. Add your first one!</div>';
       return;
     }
     list.innerHTML = '';
-    sorted.forEach((b, i) => {
-      list.appendChild(makeBlockItem(b, key, i));
-    });
+    sorted.forEach((b,i) => list.appendChild(makeBlockItem(b, key, i, false)));
   }
 
-  function renderUpcoming() {
+  function renderAgenda() {
     const all = JSON.parse(localStorage.getItem('allDays') || '{}');
     const today = todayKey();
-    const futureKeys = Object.keys(all).filter(k => k >= today && all[k].length > 0).sort();
-    const container = document.getElementById('upcomingList');
-    if (futureKeys.length === 0) {
-      container.innerHTML = '<div class="card"><div class="empty">No upcoming activities yet.</div></div>';
+    const allKeys = Object.keys(all).filter(k => all[k].length > 0).sort();
+    const overdueKeys = allKeys.filter(k => k < today);
+    const currentAndFutureKeys = allKeys.filter(k => k >= today);
+    const container = document.getElementById('agendaList');
+    container.innerHTML = '';
+
+    if (overdueKeys.length === 0 && currentAndFutureKeys.length === 0) {
+      container.innerHTML = '<div class="card"><div class="empty">No activities yet.</div></div>';
       return;
     }
-    container.innerHTML = '';
-    futureKeys.forEach(key => {
-      const blocks = [...all[key]].sort((a, b) => a.from.localeCompare(b.from));
-      const group = document.createElement('div');
-      group.className = 'date-group';
-      const label = document.createElement('div');
-      label.className = 'date-group-label' + (key === today ? ' is-today' : '');
-      label.textContent = formatDateLabel(key);
-      group.appendChild(label);
+
+    if (overdueKeys.length > 0) {
+      const title = document.createElement('div');
+      title.className = 'section-title overdue';
+      title.textContent = 'Overdue';
+      container.appendChild(title);
       const card = document.createElement('div');
       card.className = 'card';
-      blocks.forEach((b, i) => {
-        card.appendChild(makeBlockItem(b, key, i));
+      overdueKeys.forEach(key => {
+        const blocks = [...all[key]].sort((a,b) => a.from.localeCompare(b.from));
+        blocks.forEach((b,i) => card.appendChild(makeBlockItem(b, key, i, true)));
       });
-      group.appendChild(card);
-      container.appendChild(group);
-    });
+      container.appendChild(card);
+    }
+
+    if (currentAndFutureKeys.length > 0) {
+      const title = document.createElement('div');
+      title.className = 'section-title';
+      title.style.marginTop = overdueKeys.length > 0 ? '16px' : '0';
+      title.textContent = 'Upcoming';
+      container.appendChild(title);
+      currentAndFutureKeys.forEach(key => {
+        const blocks = [...all[key]].sort((a,b) => a.from.localeCompare(b.from));
+        const group = document.createElement('div');
+        group.className = 'date-group';
+        const label = document.createElement('div');
+        label.className = 'date-group-label' + (key === today ? ' is-today' : '');
+        label.textContent = formatDateLabel(key);
+        group.appendChild(label);
+        const card = document.createElement('div');
+        card.className = 'card';
+        blocks.forEach((b,i) => card.appendChild(makeBlockItem(b, key, i, false)));
+        group.appendChild(card);
+        container.appendChild(group);
+      });
+    }
   }
 
-  function goToToday() {
-    viewingDate = null;
-    renderDay();
-  }
+  function goToToday() { viewingDate = null; renderDay(); }
 
   function openModal(key, index) {
-    editingKey = key;
-    editingIndex = index;
+    editingKey = key; editingIndex = index;
     const isEdit = key !== null && index !== null;
     document.getElementById('modalTitle').textContent = isEdit ? 'Edit Activity' : 'Add Activity';
     document.getElementById('deleteActivityBtn').style.display = isEdit ? 'block' : 'none';
     if (isEdit) {
-      const blocks = getBlocks(key);
-      const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
+      const sorted = [...getBlocks(key)].sort((a,b) => a.from.localeCompare(b.from));
       const b = sorted[index];
       document.getElementById('actName').value = b.name;
-      selectedDateKey = key;
-      selectedColor = b.color;
+      selectedDateKey = key; selectedColor = b.color;
       document.getElementById('timeFrom').value = b.from;
       document.getElementById('timeTo').value = b.to;
     } else {
       document.getElementById('actName').value = '';
       selectedDateKey = todayKey();
       selectedColor = COLORS[0];
-      document.getElementById('timeFrom').value = '09:00';
-      document.getElementById('timeTo').value = '09:30';
+      const now = new Date();
+      const roundedMin = Math.ceil(now.getMinutes() / 5) * 5;
+      const fromMin = now.getHours() * 60 + (roundedMin === 60 ? 0 : roundedMin);
+      const fromH = Math.floor(fromMin / 60) % 24;
+      const fromM = fromMin % 60;
+      const toTotal = fromH * 60 + fromM + 30;
+      document.getElementById('timeFrom').value = String(fromH).padStart(2,'0') + ':' + String(fromM).padStart(2,'0');
+      document.getElementById('timeTo').value = String(Math.floor(toTotal/60)%24).padStart(2,'0') + ':' + String(toTotal%60).padStart(2,'0');
     }
     document.getElementById('dateDisplay').textContent = friendlyDate(selectedDateKey);
     document.getElementById('miniCal').classList.remove('open');
-    buildColorPicker();
-    openMiniCal();
+    buildColorPicker(); openMiniCal();
     document.getElementById('overlay').classList.add('open');
   }
 
-  function closeModal() {
-    document.getElementById('overlay').classList.remove('open');
-  }
+  function closeModal() { document.getElementById('overlay').classList.remove('open'); }
 
   function saveBlock() {
     const name = document.getElementById('actName').value.trim();
@@ -435,30 +437,28 @@
     const to = document.getElementById('timeTo').value;
     if (!name || !selectedDateKey || !from || !to) { alert('Please fill in all fields.'); return; }
     if (editingKey !== null && editingIndex !== null) {
-      let oldBlocks = getBlocks(editingKey);
-      const sorted = [...oldBlocks].sort((a, b) => a.from.localeCompare(b.from));
+      let old = getBlocks(editingKey);
+      const sorted = [...old].sort((a,b) => a.from.localeCompare(b.from));
       const item = sorted[editingIndex];
-      oldBlocks = oldBlocks.filter(b => !(b.name === item.name && b.from === item.from && b.to === item.to));
-      setBlocks(editingKey, oldBlocks);
+      old = old.filter(b => !(b.name===item.name && b.from===item.from && b.to===item.to));
+      setBlocks(editingKey, old);
     }
     const blocks = getBlocks(selectedDateKey);
     blocks.push({ name, from, to, color: selectedColor });
     setBlocks(selectedDateKey, blocks);
     closeModal();
-    if (currentTab === 'myDay') renderDay();
-    else renderUpcoming();
+    if (currentTab === 'myDay') renderDay(); else renderAgenda();
   }
 
   function deleteFromModal() {
     if (editingKey === null || editingIndex === null) return;
     let blocks = getBlocks(editingKey);
-    const sorted = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
+    const sorted = [...blocks].sort((a,b) => a.from.localeCompare(b.from));
     const item = sorted[editingIndex];
-    blocks = blocks.filter(b => !(b.name === item.name && b.from === item.from && b.to === item.to));
+    blocks = blocks.filter(b => !(b.name===item.name && b.from===item.from && b.to===item.to));
     setBlocks(editingKey, blocks);
     closeModal();
-    if (currentTab === 'myDay') renderDay();
-    else renderUpcoming();
+    if (currentTab === 'myDay') renderDay(); else renderAgenda();
   }
 
   function buildColorPicker() {
@@ -485,24 +485,18 @@
     });
   }
 
-  function toggleMiniCal() {
-    document.getElementById('miniCal').classList.toggle('open');
-  }
-
+  function toggleMiniCal() { document.getElementById('miniCal').classList.toggle('open'); }
   function openMiniCal() {
     const now = new Date();
-    miniMonth = now.getMonth();
-    miniYear = now.getFullYear();
+    miniMonth = now.getMonth(); miniYear = now.getFullYear();
     renderMiniCal();
   }
-
   function changeMiniMonth(dir) {
     miniMonth += dir;
     if (miniMonth > 11) { miniMonth = 0; miniYear++; }
     if (miniMonth < 0) { miniMonth = 11; miniYear--; }
     renderMiniCal();
   }
-
   function renderMiniCal() {
     document.getElementById('miniMonthLabel').textContent = MONTHS[miniMonth] + ' ' + miniYear;
     const grid = document.getElementById('miniCalGrid');
@@ -514,7 +508,7 @@
       grid.appendChild(cell);
     });
     const firstDay = new Date(miniYear, miniMonth, 1).getDay();
-    const daysInMonth = new Date(miniYear, miniMonth + 1, 0).getDate();
+    const daysInMonth = new Date(miniYear, miniMonth+1, 0).getDate();
     const today = todayKey();
     for (let i = 0; i < firstDay; i++) {
       const blank = document.createElement('div');
@@ -523,57 +517,43 @@
     }
     for (let d = 1; d <= daysInMonth; d++) {
       const key = `${miniYear}-${String(miniMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const isToday = key === today;
-      const isSelected = key === selectedDateKey;
-      const isPast = key < today;
       const cell = document.createElement('div');
       cell.className = 'mini-cell' +
-        (isSelected ? ' selected' : '') +
-        (isToday && !isSelected ? ' today' : '') +
-        (isPast && !isSelected ? ' past' : '');
+        (key === selectedDateKey ? ' selected' : '') +
+        (key === today && key !== selectedDateKey ? ' today' : '') +
+        (key < today && key !== selectedDateKey ? ' past' : '');
       cell.textContent = d;
       cell.onclick = () => selectDate(key);
       grid.appendChild(cell);
     }
   }
-
   function selectDate(key) {
     selectedDateKey = key;
     document.getElementById('dateDisplay').textContent = friendlyDate(key);
     document.getElementById('miniCal').classList.remove('open');
     renderMiniCal();
   }
-
   function syncEndTime() {
     const from = document.getElementById('timeFrom').value;
     if (!from) return;
-    const [h, m] = from.split(':').map(Number);
-    const total = h * 60 + m + 30;
-    const newH = Math.floor(total / 60) % 24;
-    const newM = total % 60;
+    const [h,m] = from.split(':').map(Number);
+    const total = h*60 + m + 30;
     document.getElementById('timeTo').value =
-      String(newH).padStart(2, '0') + ':' + String(newM).padStart(2, '0');
+      String(Math.floor(total/60)%24).padStart(2,'0') + ':' + String(total%60).padStart(2,'0');
   }
 
   function openCalendar() {
-    const now = new Date();
-    calMonth = now.getMonth();
-    calYear = now.getFullYear();
+    calMonth = new Date().getMonth(); calYear = new Date().getFullYear();
     renderCalendar();
     document.getElementById('calOverlay').classList.add('open');
   }
-
-  function closeCalendar() {
-    document.getElementById('calOverlay').classList.remove('open');
-  }
-
+  function closeCalendar() { document.getElementById('calOverlay').classList.remove('open'); }
   function changeMonth(dir) {
     calMonth += dir;
     if (calMonth > 11) { calMonth = 0; calYear++; }
     if (calMonth < 0) { calMonth = 11; calYear--; }
     renderCalendar();
   }
-
   function renderCalendar() {
     document.getElementById('calMonthLabel').textContent = MONTHS[calMonth] + ' ' + calYear;
     const grid = document.getElementById('calGrid');
@@ -585,7 +565,7 @@
       grid.appendChild(cell);
     });
     const firstDay = new Date(calYear, calMonth, 1).getDay();
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
     const todayStr = todayKey();
     const all = JSON.parse(localStorage.getItem('allDays') || '{}');
     for (let i = 0; i < firstDay; i++) {
@@ -602,20 +582,14 @@
       cell.innerHTML = `<span class="cal-num">${d}</span>${hasData ? '<div class="cal-dot"></div>' : ''}`;
       cell.onclick = () => {
         viewingDate = isToday ? null : new Date(calYear, calMonth, d);
-        closeCalendar();
-        switchTab('myDay');
-        renderDay();
+        closeCalendar(); switchTab('myDay'); renderDay();
       };
       grid.appendChild(cell);
     }
   }
 
-  document.getElementById('overlay').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-  });
-  document.getElementById('calOverlay').addEventListener('click', function(e) {
-    if (e.target === this) closeCalendar();
-  });
+  document.getElementById('overlay').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
+  document.getElementById('calOverlay').addEventListener('click', function(e) { if (e.target===this) closeCalendar(); });
 
   init();
 </script>
